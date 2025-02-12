@@ -10,7 +10,7 @@ use std::process;
  */
 pub struct RefCell<T> {
     value: UnsafeCell<T>, // The value being stored. Mutable even when the RefCell is immutable.
-    mutable_borrowed: UnsafeCell<bool>, // Tracks whether a mutable borrow is active, using UnsafeCell for interior mutability.
+    mutably_borrowed: UnsafeCell<bool>, // Tracks whether a mutable borrow is active, using UnsafeCell for interior mutability.
 }
 
 /*@
@@ -32,8 +32,8 @@ lem RefCell_send<T>(t1: thread_id_t)
 pred<T> <RefCell<T>>.own(t, cell) = <T>.own(t, cell.value);
 
 pred_ctor na_borrow_content<T>(ptr: *RefCell<T>, t: thread_id_t, k: lifetime_t)() =
-    RefCell_mutable_borrowed(ptr, ?borrowed) &*&
-    pointer_within_limits(&(*ptr).mutable_borrowed) == true &*&
+    RefCell_mutably_borrowed(ptr, ?borrowed) &*&
+    pointer_within_limits(&(*ptr).mutably_borrowed) == true &*&
     pointer_within_limits(&(*ptr).value) == true &*&
     if borrowed { true }
     else {
@@ -62,32 +62,32 @@ lem RefCell_share_full<T>(k: lifetime_t, t: thread_id_t, l: *RefCell<T>)
     req type_interp::<T>() &*& atomic_mask(Nlft) &*& full_borrow(k, RefCell_full_borrow_content::<T>(t, l)) &*& [?q]lifetime_token(k);
     ens type_interp::<T>() &*& atomic_mask(Nlft) &*& [_]RefCell_share::<T>(k, t, l) &*& [q]lifetime_token(k);
 {
-    produce_lem_ptr_chunk implies(RefCell_full_borrow_content(t, l), sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed))))() {
+    produce_lem_ptr_chunk implies(RefCell_full_borrow_content(t, l), sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed))))() {
         open RefCell_full_borrow_content::<T>(t, l)();
-        assert (*l).value |-> ?value &*& (*l).mutable_borrowed |-> ?mutable_borrowed;
-        open RefCell_own::<T>()(t, RefCell::<T> { value, mutable_borrowed });
+        assert (*l).value |-> ?value &*& (*l).mutably_borrowed |-> ?mutably_borrowed;
+        open RefCell_own::<T>()(t, RefCell::<T> { value, mutably_borrowed });
 
         close_full_borrow_content::<T>(t, &(*l).value);
-        close bool_full_borrow_content(t, &(*l).mutable_borrowed)();
-        close sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed))();
+        close bool_full_borrow_content(t, &(*l).mutably_borrowed)();
+        close sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed))();
         close RefCell_padding::<T>(l)();
-        close sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed)))();
+        close sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed)))();
     } {
-        produce_lem_ptr_chunk implies(sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed))), RefCell_full_borrow_content(t, l))() {
-            open sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed)))();
+        produce_lem_ptr_chunk implies(sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed))), RefCell_full_borrow_content(t, l))() {
+            open sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed)))();
             open RefCell_padding::<T>(l)();
-            open sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed))();
+            open sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed))();
             open_full_borrow_content::<T>(t, &(*l).value);
-            open bool_full_borrow_content(t, &(*l).mutable_borrowed)();
-            assert (*l).value |-> ?value &*& (*l).mutable_borrowed |-> ?mutable_borrowed;
-            close RefCell_own::<T>(t, RefCell::<T> { value: value, mutable_borrowed: mutable_borrowed });
+            open bool_full_borrow_content(t, &(*l).mutably_borrowed)();
+            assert (*l).value |-> ?value &*& (*l).mutably_borrowed |-> ?mutably_borrowed;
+            close RefCell_own::<T>(t, RefCell::<T> { value: value, mutably_borrowed: mutably_borrowed });
             close RefCell_full_borrow_content::<T>(t, l)();
         } {
-            full_borrow_implies(k, RefCell_full_borrow_content(t, l), sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed))));
+            full_borrow_implies(k, RefCell_full_borrow_content(t, l), sep(RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed))));
         }
     }
-    full_borrow_split_m(k, RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed)));
-    full_borrow_split_m(k, <T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutable_borrowed)); // LFTL-BOR-SPLIT
+    full_borrow_split_m(k, RefCell_padding(l), sep(<T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed)));
+    full_borrow_split_m(k, <T>.full_borrow_content(t, &(*l).value), bool_full_borrow_content(t, &(*l).mutably_borrowed)); // LFTL-BOR-SPLIT
     open_full_borrow_m(q, k, <T>.full_borrow_content(t, &(*l).value));
     open_full_borrow_content(t, &(*l).value);
     points_to_limits(&(*l).value);
@@ -95,23 +95,23 @@ lem RefCell_share_full<T>(k: lifetime_t, t: thread_id_t, l: *RefCell<T>)
     close_full_borrow_m(<T>.full_borrow_content(t, &(*l).value));
 
 
-    let kstrong = open_full_borrow_strong_m(k, bool_full_borrow_content(t, &(*l).mutable_borrowed), q); // LFTL-BOR-ACC-STRONG
-    produce_lem_ptr_chunk full_borrow_convert_strong(True, na_borrow_content(l, t, k), kstrong, bool_full_borrow_content(t, &(*l).mutable_borrowed))() {
+    let kstrong = open_full_borrow_strong_m(k, bool_full_borrow_content(t, &(*l).mutably_borrowed), q); // LFTL-BOR-ACC-STRONG
+    produce_lem_ptr_chunk full_borrow_convert_strong(True, na_borrow_content(l, t, k), kstrong, bool_full_borrow_content(t, &(*l).mutably_borrowed))() {
         open na_borrow_content::<T>(l, t, k)();
-        if (*l).mutable_borrowed == false {
+        if (*l).mutably_borrowed == false {
             leak full_borrow(_, <T>.full_borrow_content(t, &(*l).value));
         }
-        close bool_full_borrow_content(t, &(*l).mutable_borrowed)();
+        close bool_full_borrow_content(t, &(*l).mutably_borrowed)();
     }{
-        open bool_full_borrow_content(t, &(*l).mutable_borrowed)();
+        open bool_full_borrow_content(t, &(*l).mutably_borrowed)();
         close exists(k);
 
-        if (*l).mutable_borrowed == true {
+        if (*l).mutably_borrowed == true {
             leak full_borrow(_, <T>.full_borrow_content(t, &(*l).value));
         }
-        points_to_limits(&(*l).mutable_borrowed);
+        points_to_limits(&(*l).mutably_borrowed);
         close na_borrow_content::<T>(l, t, k)();
-        close_full_borrow_strong_m(kstrong, bool_full_borrow_content(t, &(*l).mutable_borrowed), na_borrow_content(l, t, k));
+        close_full_borrow_strong_m(kstrong, bool_full_borrow_content(t, &(*l).mutably_borrowed), na_borrow_content(l, t, k));
         full_borrow_into_nonatomic_borrow_m(kstrong, t, MaskNshrSingle(l), na_borrow_content(l, t, k));
         nonatomic_borrow_mono(kstrong, k, t, MaskNshrSingle(l), na_borrow_content(l, t, k));
         close exists(k);
@@ -126,7 +126,7 @@ impl<T> RefCell<T> {
     pub fn new(value: T) -> Self {
         let r = RefCell {
             value: UnsafeCell::new(value),
-            mutable_borrowed: UnsafeCell::new(false),
+            mutably_borrowed: UnsafeCell::new(false),
         };
         //@ close RefCell_own::<T>(_t, r);
         r
@@ -141,8 +141,8 @@ impl<T> RefCell<T> {
             //@ thread_token_split(_t, MaskTop, mask);
             //@ open_nonatomic_borrow('a, _t, mask, _q_a);
             //@ open na_borrow_content::<T>(this, _t, dk)();
-            if *this.mutable_borrowed.get() == false {
-                *this.mutable_borrowed.get() = true;
+            if *this.mutably_borrowed.get() == false {
+                *this.mutably_borrowed.get() = true;
             } else {
                 process::abort();
             }
@@ -152,7 +152,7 @@ impl<T> RefCell<T> {
         //@ close_nonatomic_borrow();
         //@ thread_token_merge(_t, mask0, mask);
         //@ close thread_token(_t);
-        // Return a RefMut object that will reset the mutable_borrowed flag when dropped
+        // Return a RefMut object that will reset the mutably_borrowed flag when dropped
         //@ assert full_borrow(?kv, <T>.full_borrow_content(_t, &(*this).value));
         //@ close exists(kv);
         let r = RefMut { refcell: this };
@@ -168,7 +168,7 @@ impl<T> Drop for RefCell<T> {
         //@ open RefCell_full_borrow_content::<T>(_t, self)();
         //@ open RefCell_own::<T>(_t, ?s);
         unsafe {
-            if *self.mutable_borrowed.get() {
+            if *self.mutably_borrowed.get() {
                 process::abort();
             }
         }
@@ -207,7 +207,7 @@ lem RefMut_send<'a, T>(t1: thread_id_t)
 
 @*/
 
-// When dropped, reset the mutable_borrowed flag
+// When dropped, reset the mutably_borrowed flag
 impl<'a, T> Drop for RefMut<'a, T> {
     fn drop(&mut self) {
         //@ open RefMut_full_borrow_content::<'a, T>(_t, self)();
@@ -220,11 +220,11 @@ impl<'a, T> Drop for RefMut<'a, T> {
             //@ thread_token_split(_t, MaskTop, mask);
             //@ open_nonatomic_borrow('a, _t, mask, _q_a);
             //@ open na_borrow_content::<T>(cell, _t, dk)();
-            /*@ if !(*(*self).refcell).mutable_borrowed {
+            /*@ if !(*(*self).refcell).mutably_borrowed {
                 leak full_borrow(dk, _);
             }
             @*/
-            *self.refcell.mutable_borrowed.get() = false;
+            *self.refcell.mutably_borrowed.get() = false;
             //@ assert partial_thread_token(_t, ?mask0);
             //@ close na_borrow_content::<T>(cell, _t, dk)();
             //@ close_nonatomic_borrow();
