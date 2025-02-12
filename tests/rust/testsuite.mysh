@@ -77,6 +77,7 @@ cd safe_abstraction
   verifast -ignore_unwind_paths -ignore_ref_creation -allow_assume deque.rs
   verifast -ignore_ref_creation -allow_assume cell_u32.rs
   verifast -ignore_unwind_paths -ignore_ref_creation -allow_assume cell.rs
+  verifast -ignore_unwind_paths -ignore_ref_creation -allow_assume ref_cell.rs
   verifast -ignore_unwind_paths -ignore_ref_creation -allow_assume tree.rs
   verifast -allow_should_fail -allow_dead_code drop_test.rs
   verifast -ignore_unwind_paths -ignore_ref_creation tparam_own.rs
